@@ -1,4 +1,4 @@
 Fade
 ====
 
-(Work in progress) An experimental Android based game. 
+(Work in progress) An experimental Mobile game.

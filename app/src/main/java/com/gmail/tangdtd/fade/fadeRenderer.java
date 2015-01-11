@@ -3,11 +3,7 @@ package com.gmail.tangdtd.fade;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
-import android.util.DisplayMetrics;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -18,51 +14,51 @@ import javax.microedition.khronos.opengles.GL10;
 public class fadeRenderer implements GLSurfaceView.Renderer {
 
     private float [] fMVPMatrix = new float[16];
-    private float [] fViewMatrix = new float[16];
     private float [] fProjMatrix = new float[16];
-    private float [] fModelMatrix = new float[16];
-    private float [] fRotateMatrix = new float[16];
-    private volatile float deltaX, deltaY;
+    private Crosshair crosshair;
+    private Camera camera;
     private Background bg;
+    private Enemy enemy1, enemy2, enemy3;
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         GLES20.glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-        Matrix.setLookAtM(fViewMatrix, 0, 0f, 0f, 0f, 0f, 0f, 1f, 0f, 1f, 0f);
-        Matrix.setIdentityM(fRotateMatrix, 0);
+        GLES20.glEnable(GLES20.GL_CULL_FACE);
+        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         bg = new Background();
+        crosshair = new Crosshair();
+        enemy1 = new Enemy(6, 8f, 0f, 8f);
+        enemy2 = new Enemy(4, 0f, 8f, -8f);
+        enemy3 = new Enemy(3, 5f, 5f, 5f);
+
+        camera = new Camera();
     }
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         GLES20.glViewport(0, 0, width, height);
         float ratio = (float) width / height;
-        deltaX = 0;
-        deltaY = 0;
-        Matrix.frustumM(fProjMatrix, 0,  -ratio, ratio, -1f, 1f, 1f, 7f);
+        Matrix.frustumM(fProjMatrix, 0,  -ratio, ratio, -1f, 1f, 3f, 30f);
+        camera.setProjMatrix(fProjMatrix);
     }
 
 
     @Override
     public void onDrawFrame(GL10 gl) {
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT  );
-        Matrix.setIdentityM(fModelMatrix, 0);
-        float [] scratch = new float [16];
-        Matrix.rotateM(fModelMatrix, 0, deltaX, 0.0f, 1.0f, 0.0f);
-        Matrix.rotateM(fModelMatrix, 0, deltaY, 1.0f, 0.0f, 0.0f);
-        deltaX = 0f;
-        deltaY = 0f;
-        Matrix.multiplyMM(scratch, 0, fModelMatrix, 0, fRotateMatrix, 0);
-        System.arraycopy(scratch, 0, fRotateMatrix, 0, 16);
-        Matrix.multiplyMM(fMVPMatrix, 0, fViewMatrix, 0, scratch, 0);
-        Matrix.multiplyMM(fMVPMatrix, 0, fProjMatrix, 0, fMVPMatrix, 0);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+        fMVPMatrix = camera.view();
         bg.draw(fMVPMatrix);
-    }
 
-    public void moveCamera(float dx, float dy){
-        deltaX += dx;
-        deltaY += dy;
+        enemy2.draw(fMVPMatrix);
+        enemy1.draw(fMVPMatrix);
+        enemy3.draw(fMVPMatrix);
 
+        //if (enemy1.isStopped()){
+            //Random rGenerator = new Random();
+//            float scale = 7f;
+//            enemy1.moveTo(scale * (2f * rGenerator.nextFloat() - 1f) , scale * (2f * rGenerator.nextFloat()  - 1f), scale * (2f * rGenerator.nextFloat() - 1f));
+
+        //}
     }
     public static int loadShader(int type, String shaderCode){
 
@@ -75,5 +71,17 @@ public class fadeRenderer implements GLSurfaceView.Renderer {
         GLES20.glCompileShader(shader);
 
         return shader;
+    }
+
+    public void moveCamera(float dx, float dy){
+        camera.move(dx, dy);
+    }
+    public void slowCameraTo(float slowfactor){
+//        Log.d("Fade-fadeRender-slowfactor", "Value: " + Float.toString(slowfactor));
+        camera.setSlowFactor(slowfactor);
+    }
+
+    public void touch(float x, float y){
+        crosshair.moveTo(x, y);
     }
 }
