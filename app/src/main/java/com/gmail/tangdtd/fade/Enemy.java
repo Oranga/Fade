@@ -30,6 +30,7 @@ public class Enemy {
     private static int eProgramHandle;
     private int eMVPMatrixHandle, ePositionHandle, eColorHandle;
     private float [] eModelMatrix = new float[16];
+    private float [] eRotateMatrix = new float [16];
     private float [] eVerticesData;
     private short [] eDrawOrder;
     private FloatBuffer eVerticesBuffer;
@@ -42,12 +43,11 @@ public class Enemy {
     private final int eColorDataSize = 4;
 
 
-    private int numSides;
-    private float xLoc, yLoc, zLoc, newXLoc, newYLoc, newZLoc, xRot, yRot, zRot,colorR, colorB, colorG, alpha;
+    private float numSides;
+    private float xLoc, yLoc, zLoc, newXLoc, newYLoc, newZLoc, xRot, yRot, zRot,colorR, colorB, colorG, innerAlpha, outerR, outerB, outerG, outerA;
     private final float eScale = 2f;
     private final float speed = 0.01f;
-    private final float hitFactor = 0.01f;
-    private final float outerColor = 1f;
+    private final float hitFactor = 0.005f;
 
 
     public Enemy(){
@@ -60,8 +60,9 @@ public class Enemy {
         this(3, x, y, z);
     }
     public Enemy(int n, float x, float y, float z){
-        numSides = n;
 
+        Matrix.setIdentityM(eRotateMatrix, 0);
+        numSides = n;
         newXLoc = xLoc = x;
         newYLoc = yLoc = y;
         newZLoc = zLoc = z;
@@ -70,10 +71,17 @@ public class Enemy {
         colorR = 0f;
         colorB = 0f;
         colorG = 0f;
-        alpha = 1f;
+        innerAlpha = 1f;
+        outerR = 0.5f;
+        outerG = 0f;
+        outerB = 1f;
 
         eVerticesData = new float[n * 7 + 7];
         eDrawOrder = new short[n * 3];
+
+        int vertexShaderHandle = fadeRenderer.loadShader(GLES20.GL_VERTEX_SHADER, vertexShader);
+        int fragmentShaderHandle = fadeRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER,fragmentShader);
+
         eVerticesData[0] = 0f;
         eVerticesData[1] = 0f;
         eVerticesData[2] = 0f;
@@ -90,15 +98,15 @@ public class Enemy {
             //Log.d("Fade-eVertexData-" + (i + 1) + "-Y", Float.toString(eVerticesData[i + 1]));
             eVerticesData[i+2] = 0f;
             //Log.d("Fade-eVertexData-" + (i + 2) + "-Z", Float.toString(eVerticesData[i + 2]));
-            eVerticesData[i+3] = outerColor;
+            eVerticesData[i+3] = outerR;
             //Log.d("Fade-eVertexData-" + (i + 3) + "-R", Float.toString(eVerticesData[i + 3]));
-            eVerticesData[i+4] = outerColor;
+            eVerticesData[i+4] = outerG;
             //Log.d("Fade-eVertexData-" + (i + 4) + "-G", Float.toString(eVerticesData[i + 4]));
-            eVerticesData[i+5] = outerColor;
+            eVerticesData[i+5] = outerB;
             //Log.d("Fade-eVertexData-" + (i + 5) + "-B", Float.toString(eVerticesData[i + 5]));
-            eVerticesData[i+6] = alpha;
+            eVerticesData[i+6] = innerAlpha;
             //Log.d("Fade-eVertexData-" + (i + 6) + "-A", Float.toString(eVerticesData[i + 6]));
-            angle += 2 * Math.PI/n;
+            angle += 2 * Math.PI/numSides;
         }
         for (int i = 0; i < n; i++){
             eDrawOrder[i*3] = 0;
@@ -115,8 +123,7 @@ public class Enemy {
         eDrawListBuffer = ByteBuffer.allocateDirect(eDrawOrder.length * 2).order(ByteOrder.nativeOrder()).asShortBuffer();
         eDrawListBuffer.put(eDrawOrder).position(0);
 
-        int vertexShaderHandle = fadeRenderer.loadShader(GLES20.GL_VERTEX_SHADER, vertexShader);
-        int fragmentShaderHandle = fadeRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER,fragmentShader);
+
 
         eProgramHandle = GLES20.glCreateProgram();
         GLES20.glAttachShader(eProgramHandle, vertexShaderHandle);
@@ -130,6 +137,7 @@ public class Enemy {
         eColorHandle = GLES20.glGetAttribLocation(eProgramHandle, "a_Color");
 
         Matrix.setIdentityM(eModelMatrix, 0);
+        Matrix.scaleM(eModelMatrix, 0, eScale, eScale, eScale);
     }
     public float getRotationAngles(float x, float y){
         if (x == 0 && y == 0){
@@ -142,7 +150,25 @@ public class Enemy {
             return (float) (Math.atan((double) y / x)* 180.0/Math.PI);
         }
     }
+    public  float [] getModelMatrix(){
+        Matrix.setIdentityM(eModelMatrix, 0);
+        Matrix.translateM(eModelMatrix, 0, xLoc, yLoc, zLoc);
+        Matrix.rotateM(eModelMatrix, 0, xRot, 1f, 0f, 0f);
+        Matrix.rotateM(eModelMatrix, 0, yRot, 0f, 1f, 0f);
+        Matrix.scaleM(eModelMatrix, 0, eScale, eScale, eScale);
+        return eModelMatrix;
+    }
+    public void setRotation(float dx, float dy, float dz){
+        float [] tempMatrix = new float[16];
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.rotateM(tempMatrix, 0, dx, 1f, 0f, 0f);
+        Matrix.rotateM(tempMatrix, 0, dy, 0f, 1f, 0f);
+        Matrix.rotateM(tempMatrix, 0, dz, 0f, 0f, 1f);
 
+        Matrix.multiplyMM(eRotateMatrix, 0, tempMatrix, 0, eModelMatrix,0);
+        System.arraycopy(eRotateMatrix, 0, eModelMatrix, 0, 16);
+
+    }
     public void rotate() {
         yRot = getRotationAngles(zLoc, xLoc);
         xRot = -getRotationAngles(zLoc, yLoc);
@@ -195,12 +221,13 @@ public class Enemy {
     public void draw(float [] mvpMatrix) {
 //        GLES20.glDisable(GLES20.GL_CULL_FACE);
         float [] eFinalMatrix = new float[16];
-        move();
-        Matrix.setIdentityM(eModelMatrix, 0);
-        Matrix.translateM(eModelMatrix, 0, xLoc, yLoc, zLoc);
-        Matrix.rotateM(eModelMatrix, 0, xRot, 1f, 0f, 0f);
-        Matrix.rotateM(eModelMatrix, 0, yRot, 0f, 1f, 0f);
-        Matrix.scaleM(eModelMatrix, 0, eScale, eScale, eScale);
+
+        if (xLoc == 0 && yLoc == 0 && zLoc == 0) {
+
+        }else{
+            move();
+            getModelMatrix();
+        }
 
 
         Matrix.multiplyMM(eFinalMatrix, 0, mvpMatrix, 0, eModelMatrix, 0);
@@ -220,7 +247,55 @@ public class Enemy {
         GLES20.glDisableVertexAttribArray(ePositionHandle);
         GLES20.glDisableVertexAttribArray(eColorHandle);
     }
-    public void hit(){
+    public void onHit(){
+        if (numSides <= 3){
 
+        }else {
+            numSides = numSides - hitFactor;
+            int intSides = (int) Math.ceil(numSides);
+            eVerticesData = new float[intSides * 7 + 7];
+            eDrawOrder = new short[intSides * 3];
+
+            eVerticesData[0] = 0f;
+            eVerticesData[1] = 0f;
+            eVerticesData[2] = 0f;
+            eVerticesData[3] = colorR;
+            eVerticesData[4] = colorG;
+            eVerticesData[5] = colorB;
+            eVerticesData[6] = 1f;
+
+            float angle = 0;
+            for (int i = 7; i < eVerticesData.length; i += 7) {
+                eVerticesData[i] = (float) Math.cos(angle);
+                //Log.d("Fade-eVertexData-" + i + "-X", Float.toString(eVerticesData[i]));
+                eVerticesData[i + 1] = (float) Math.sin(angle);
+                //Log.d("Fade-eVertexData-" + (i + 1) + "-Y", Float.toString(eVerticesData[i + 1]));
+                eVerticesData[i + 2] = 0f;
+                //Log.d("Fade-eVertexData-" + (i + 2) + "-Z", Float.toString(eVerticesData[i + 2]));
+                eVerticesData[i + 3] = outerR;
+                //Log.d("Fade-eVertexData-" + (i + 3) + "-R", Float.toString(eVerticesData[i + 3]));
+                eVerticesData[i + 4] = outerG;
+                //Log.d("Fade-eVertexData-" + (i + 4) + "-G", Float.toString(eVerticesData[i + 4]));
+                eVerticesData[i + 5] = outerB;
+                //Log.d("Fade-eVertexData-" + (i + 5) + "-B", Float.toString(eVerticesData[i + 5]));
+                eVerticesData[i + 6] = innerAlpha;
+                //Log.d("Fade-eVertexData-" + (i + 6) + "-A", Float.toString(eVerticesData[i + 6]));
+                angle += 2 * Math.PI / numSides;
+            }
+            for (int i = 0; i < intSides; i++) {
+                eDrawOrder[i * 3] = 0;
+                //Log.d("Fade-eDrawData-" + (i*n) + "-1", Short.toString(eDrawOrder[i*3]));
+                eDrawOrder[i * 3 + 2] = (short) (i + 1);
+                //Log.d("Fade-eDrawData-" + (i*n+1) + "-2", Short.toString(eDrawOrder[i*3+1]));
+                eDrawOrder[i * 3 + 1] = (short) ((i + 1) % (float) intSides + 1);
+                //Log.d("Fade-eDrawData-" + (i*n+2) + "-3", Short.toString(eDrawOrder[i*3+2]));
+            }
+            eVerticesBuffer = ByteBuffer.allocateDirect(eVerticesData.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
+            eVerticesBuffer.put(eVerticesData).position(0);
+
+            // initialize byte buffer for the draw list
+            eDrawListBuffer = ByteBuffer.allocateDirect(eDrawOrder.length * 2).order(ByteOrder.nativeOrder()).asShortBuffer();
+            eDrawListBuffer.put(eDrawOrder).position(0);
+        }
     }
 }

@@ -33,7 +33,7 @@ public class Background {
     private int bgPositionHandle;
     private int bgColorHandle;
 
-    private final float c0 = 10f;
+    private final float c0 = 30f;
     private final float c1 =  c0 * (float)((1.0 + Math.sqrt(5.0)))/2.0f;
     private final int bgStrideBytes = 7*4;
     private final int bgPositionOffset = 0;
@@ -45,31 +45,31 @@ public class Background {
 
     private final float[] bgVerticesData = {
             -c0, c1, 0f,
-            1f, 0f, 0f, 1f,
+            0f, 0f, 1f, 1f,
             c0, c1, 0f,
-            1f, 0f, 0f, 1f,
+            0f, 0f, 1f, 1f,
             -c0, -c1, 0f,
-            1f, 0f, 0f, 1f,
+            0f, 0f, 1f, 1f,
             c0, -c1, 0f,
-            1f, 0f, 0f, 1f,
+            0f, 0f, 1f, 1f,
 
             0f, -c0, c1,
-            0f, 1f, 0f, 1f,
+            1f, 0f, 0f, 1f,
             0f, c0, c1,
-            0f, 1f, 0f, 1f,
+            1f, 0f, 0f, 1f,
             0f, -c0, -c1,
-            0f, 1f, 0f, 1f,
+            1f, 0f, 0f, 1f,
             0f,c0,-c1,
-            0f, 1f, 0f, 1f,
+            1f, 0f, 0f, 1f,
 
             c1, 0f, -c0,
-            0f, 0f, 1f, 1f,
+            0f, 1f, 0f, 1f,
             c1, 0f, c0,
-            0f, 0f, 1f, 1f,
+            0f, 1f, 0f, 1f,
             -c1, 0f, -c0,
-            0f, 0f, 1f, 1f,
+            0f, 1f, 0f, 1f,
             -c1, 0f, c0,
-            0f, 0f, 1f, 1f
+            0f, 1f, 0f, 1f,
     };
 
     private final short bgDrawOrder[] = {

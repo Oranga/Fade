@@ -18,7 +18,7 @@ public class main_fade extends Activity {
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
 
         // Create a GLSurfaceView instance and set it
-        fGLView = new fadeGLSurfaceView(this, displayMetrics.density);
+        fGLView = new fadeGLSurfaceView(this, displayMetrics.density, displayMetrics.widthPixels, displayMetrics.heightPixels);
         setContentView(fGLView);
     }
 
