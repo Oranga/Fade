@@ -3,7 +3,7 @@ package com.gmail.tangdtd.fade;
 import android.opengl.Matrix;
 
 /**
- * Created by Menace on 1/9/2015.
+ * Created by Timothy D. Mahon on 1/9/2015.
  */
 public class Camera {
     private float [] cModelMatrix = new float[16];
@@ -31,12 +31,6 @@ public class Camera {
     }
     public void setProjMatrix(float [] projMatrix){
          System.arraycopy(projMatrix, 0, cProjMatrix, 0, 16);
-    }
-    public float [] getViewMatrix(){
-        return  cViewMatrix;
-    }
-    public float [] getProjMatrix(){
-        return cProjMatrix;
     }
     public float [] view(){
         Matrix.setIdentityM(cModelMatrix, 0);

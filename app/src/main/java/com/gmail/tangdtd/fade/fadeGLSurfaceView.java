@@ -6,7 +6,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 
 /**
- * Created by Menace on 1/9/2015.
+ * Created by Timothy D. Mahon on 1/9/2015.
  */
 public class fadeGLSurfaceView extends GLSurfaceView {
 
@@ -39,7 +39,6 @@ public class fadeGLSurfaceView extends GLSurfaceView {
 
         float x = e.getX();
         float y = e.getY();
-        Log.d("Fade-fadeGLSurfaceView-xy ", "x:" + Float.toString(x) + " y: " + Float.toString(y));
         float dx = fPreviousX - x;
         float dy = y - fPreviousY ;
         switch (e.getAction()) {
@@ -47,18 +46,18 @@ public class fadeGLSurfaceView extends GLSurfaceView {
                 fRenderer.slowCameraTo(0.1f);
                 break;
             case MotionEvent.ACTION_MOVE:
-                if (Math.abs(dx) > fTouchThres || Math.abs(dy) > fTouchThres) {
-                    if (y > height/2) {
+//                if (y > height/2){
+                    if (Math.abs(dx) > fTouchThres || Math.abs(dy) > fTouchThres) {
                         fRenderer.moveCamera(dx * TOUCH_SCALE_FACTOR, dy * TOUCH_SCALE_FACTOR);
-                    }else {
-                        fRenderer.moveCamera2(dx * TOUCH_SCALE_FACTOR, dy * TOUCH_SCALE_FACTOR);
                     }
-                }
+//                }else{
+//                    fRenderer.moveCamera2(dx * TOUCH_SCALE_FACTOR, dy * TOUCH_SCALE_FACTOR );
+//                }
                 requestRender();
                 break;
             case MotionEvent.ACTION_DOWN:
-                if (y > height/2)
-                fRenderer.touch(x, height - y);
+//                if (y > height/2)
+                    fRenderer.onTouch(x, height - y);
                 //fRenderer.slowCameraTo( (float)(Math.sqrt( (double)(dx * dx + dy * dy) ) * 0.01f) );
                 //requestRender();
                 break;

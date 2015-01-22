@@ -5,7 +5,9 @@ import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 
-
+/**
+ * Created by Timothy D. Mahon on 1/7/2015.
+ */
 
 public class main_fade extends Activity {
 

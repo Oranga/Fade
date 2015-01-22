@@ -9,7 +9,7 @@ import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 
 /**
- * Created by Menace on 1/8/2015.
+ * Created by Timothy D. Mahon on 1/8/2015.
  */
 public class Enemy {
     private final static String vertexShader =
@@ -36,6 +36,10 @@ public class Enemy {
     private FloatBuffer eVerticesBuffer;
     private ShortBuffer eDrawListBuffer;
 
+    private final float distanceThres = 3f;
+    private final float radius = 1.25f;
+    private float [] t = new float [2];
+
     private final int eStrideBytes = 7*4;
     private final int ePositionOffset = 0;
     private final int ePositionDataSize = 3;
@@ -48,7 +52,6 @@ public class Enemy {
     private final float eScale = 2f;
     private final float speed = 0.01f;
     private final float hitFactor = 0.005f;
-
 
     public Enemy(){
         this(3, 0f, 0f, 5f);
@@ -75,6 +78,7 @@ public class Enemy {
         outerR = 0.5f;
         outerG = 0f;
         outerB = 1f;
+        outerA = 0f;
 
         eVerticesData = new float[n * 7 + 7];
         eDrawOrder = new short[n * 3];
@@ -88,7 +92,7 @@ public class Enemy {
         eVerticesData[3] = colorR;
         eVerticesData[4] = colorG;
         eVerticesData[5] = colorB;
-        eVerticesData[6] = 1f;
+        eVerticesData[6] = innerAlpha;
 
         float angle = 0;
         for (int i = 7; i < eVerticesData.length; i+=7){
@@ -104,7 +108,7 @@ public class Enemy {
             //Log.d("Fade-eVertexData-" + (i + 4) + "-G", Float.toString(eVerticesData[i + 4]));
             eVerticesData[i+5] = outerB;
             //Log.d("Fade-eVertexData-" + (i + 5) + "-B", Float.toString(eVerticesData[i + 5]));
-            eVerticesData[i+6] = innerAlpha;
+            eVerticesData[i+6] = outerA;
             //Log.d("Fade-eVertexData-" + (i + 6) + "-A", Float.toString(eVerticesData[i + 6]));
             angle += 2 * Math.PI/numSides;
         }
@@ -139,6 +143,30 @@ public class Enemy {
         Matrix.setIdentityM(eModelMatrix, 0);
         Matrix.scaleM(eModelMatrix, 0, eScale, eScale, eScale);
     }
+
+    /*public void setRotation(float dx, float dy, float dz){
+        float [] tempMatrix = new float[16];
+        Matrix.setIdentityM(tempMatrix, 0);
+        Matrix.rotateM(tempMatrix, 0, dx, 1f, 0f, 0f);
+        Matrix.rotateM(tempMatrix, 0, dy, 0f, 1f, 0f);
+        Matrix.rotateM(tempMatrix, 0, dz, 0f, 0f, 1f);
+
+        Matrix.multiplyMM(eRotateMatrix, 0, tempMatrix, 0, eModelMatrix,0);
+        System.arraycopy(eRotateMatrix, 0, eModelMatrix, 0, 16);
+
+    }*/
+
+   /* public void teleport(float x, float y, float z){
+        newXLoc = xLoc = x;
+        newYLoc = yLoc = y;
+        newZLoc = zLoc = z;
+        zRot = 0;
+    }*/
+    public void moveTo(float x, float y, float z){
+        newXLoc = x;
+        newYLoc = y;
+        newZLoc = z;
+    }
     public float getRotationAngles(float x, float y){
         if (x == 0 && y == 0){
             return 0f;
@@ -150,25 +178,7 @@ public class Enemy {
             return (float) (Math.atan((double) y / x)* 180.0/Math.PI);
         }
     }
-    public  float [] getModelMatrix(){
-        Matrix.setIdentityM(eModelMatrix, 0);
-        Matrix.translateM(eModelMatrix, 0, xLoc, yLoc, zLoc);
-        Matrix.rotateM(eModelMatrix, 0, xRot, 1f, 0f, 0f);
-        Matrix.rotateM(eModelMatrix, 0, yRot, 0f, 1f, 0f);
-        Matrix.scaleM(eModelMatrix, 0, eScale, eScale, eScale);
-        return eModelMatrix;
-    }
-    public void setRotation(float dx, float dy, float dz){
-        float [] tempMatrix = new float[16];
-        Matrix.setIdentityM(tempMatrix, 0);
-        Matrix.rotateM(tempMatrix, 0, dx, 1f, 0f, 0f);
-        Matrix.rotateM(tempMatrix, 0, dy, 0f, 1f, 0f);
-        Matrix.rotateM(tempMatrix, 0, dz, 0f, 0f, 1f);
 
-        Matrix.multiplyMM(eRotateMatrix, 0, tempMatrix, 0, eModelMatrix,0);
-        System.arraycopy(eRotateMatrix, 0, eModelMatrix, 0, 16);
-
-    }
     public void rotate() {
         yRot = getRotationAngles(zLoc, xLoc);
         xRot = -getRotationAngles(zLoc, yLoc);
@@ -176,18 +186,6 @@ public class Enemy {
             yRot = 0;
         }
         zRot = 0f;
-    }
-
-    public void teleport(float x, float y, float z){
-        newXLoc = xLoc = x;
-        newYLoc = yLoc = y;
-        newZLoc = zLoc = z;
-        zRot = 0;
-    }
-    public void moveTo(float x, float y, float z){
-        newXLoc = x;
-        newYLoc = y;
-        newZLoc = z;
     }
     public void move(){
         if(Math.abs(xLoc - newXLoc) < 0.01f) {
@@ -217,19 +215,42 @@ public class Enemy {
     public boolean isStopped(){
         return (xLoc == newXLoc && yLoc == newYLoc && zLoc == newZLoc);
     }
+    public  float [] getModelMatrix(){
+        Matrix.setIdentityM(eModelMatrix, 0);
+        Matrix.translateM(eModelMatrix, 0, xLoc, yLoc, zLoc);
+        Matrix.rotateM(eModelMatrix, 0, xRot, 1f, 0f, 0f);
+        Matrix.rotateM(eModelMatrix, 0, yRot, 0f, 1f, 0f);
+        Matrix.scaleM(eModelMatrix, 0, eScale, eScale, eScale);
+        return eModelMatrix;
+    }
 
-    public void draw(float [] mvpMatrix) {
-//        GLES20.glDisable(GLES20.GL_CULL_FACE);
+    public boolean playerHit(){
+        return (Matrix.length(xLoc, yLoc, zLoc) < distanceThres);
+    }
+    public int isHit(float [] ray) {
+        float b = ray[0] * -xLoc + ray[1] * -yLoc + ray[2] * -zLoc;
+        float c = xLoc * xLoc + yLoc * yLoc + zLoc * zLoc - radius * radius;
+        float det = b * b - c;
+        if (det < 0) {
+            return -1;
+        } else if (det == 0) {
+            t[0] = -b + (float) Math.sqrt(det);
+            return 0;
+        } else {
+            t[0] = -b + (float) Math.sqrt(det);
+            t[1] = -b - (float) Math.sqrt(det);
+            return 1;
+        }
+    }
+    public boolean draw(float [] mvpMatrix) {
+
         float [] eFinalMatrix = new float[16];
-
-        if (xLoc == 0 && yLoc == 0 && zLoc == 0) {
-
+        if (playerHit()) {
+            return true;
         }else{
             move();
             getModelMatrix();
         }
-
-
         Matrix.multiplyMM(eFinalMatrix, 0, mvpMatrix, 0, eModelMatrix, 0);
         GLES20.glUseProgram(eProgramHandle);
 
@@ -243,13 +264,16 @@ public class Enemy {
 
         GLES20.glUniformMatrix4fv(eMVPMatrixHandle, 1, false, eFinalMatrix, 0);
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, eDrawOrder.length, GLES20.GL_UNSIGNED_SHORT, eDrawListBuffer);
-//        GLES20.glEnable(GLES20.GL_CULL_FACE);
         GLES20.glDisableVertexAttribArray(ePositionHandle);
         GLES20.glDisableVertexAttribArray(eColorHandle);
+        return false;
     }
-    public void onHit(){
+    public boolean onHit(){
+        if (innerAlpha <= 0){
+            return true;
+        }
         if (numSides <= 3){
-
+            innerAlpha -= 0.01f;
         }else {
             numSides = numSides - hitFactor;
             int intSides = (int) Math.ceil(numSides);
@@ -262,7 +286,7 @@ public class Enemy {
             eVerticesData[3] = colorR;
             eVerticesData[4] = colorG;
             eVerticesData[5] = colorB;
-            eVerticesData[6] = 1f;
+            eVerticesData[6] = innerAlpha;
 
             float angle = 0;
             for (int i = 7; i < eVerticesData.length; i += 7) {
@@ -278,7 +302,7 @@ public class Enemy {
                 //Log.d("Fade-eVertexData-" + (i + 4) + "-G", Float.toString(eVerticesData[i + 4]));
                 eVerticesData[i + 5] = outerB;
                 //Log.d("Fade-eVertexData-" + (i + 5) + "-B", Float.toString(eVerticesData[i + 5]));
-                eVerticesData[i + 6] = innerAlpha;
+                eVerticesData[i + 6] = outerA;
                 //Log.d("Fade-eVertexData-" + (i + 6) + "-A", Float.toString(eVerticesData[i + 6]));
                 angle += 2 * Math.PI / numSides;
             }
@@ -297,5 +321,6 @@ public class Enemy {
             eDrawListBuffer = ByteBuffer.allocateDirect(eDrawOrder.length * 2).order(ByteOrder.nativeOrder()).asShortBuffer();
             eDrawListBuffer.put(eDrawOrder).position(0);
         }
+        return false;
     }
 }
