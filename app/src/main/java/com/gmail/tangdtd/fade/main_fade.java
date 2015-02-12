@@ -21,14 +21,14 @@ public class main_fade extends Activity {
 
     @Override
     protected void onResume() {
-
         super.onResume();
     }
+
     @Override
     protected void onPause() {
-
         super.onPause();
     }
+
     public void Play(View view){
         Intent intent = new Intent(this, gameViewport.class);
         startActivity(intent);

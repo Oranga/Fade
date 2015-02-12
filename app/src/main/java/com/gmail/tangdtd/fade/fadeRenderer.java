@@ -31,6 +31,7 @@ public class fadeRenderer implements GLSurfaceView.Renderer {
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         bg = new Background();
         crosshair = new Crosshair();
+
         enemies.add(new Enemy(3, 1f, 0f, 10f));
         enemies.add(new Enemy(5, 0f, 10f, -10f));
         enemies.add(new Enemy(6, 5f, 5f, 5f));
@@ -40,6 +41,8 @@ public class fadeRenderer implements GLSurfaceView.Renderer {
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         viewWidth = width;
         viewHeight = height;
+//        Log.d("Fade-fadeRenderer-viewHW", "w:" + viewWidth + " h: " + viewHeight);
+
         camera = new Camera();
         /*camera2 = new Camera(-30f, 0f, 0f,
                              0f, 0f, 0f,
@@ -49,6 +52,7 @@ public class fadeRenderer implements GLSurfaceView.Renderer {
         float [] fProjMatrix = new float[16];
         Matrix.frustumM(fProjMatrix, 0,  -ratio, ratio, -1f, 1f, 3f, 200f);
         camera.setProjMatrix(fProjMatrix);
+        crosshair.setViewPort(0f, 0f, viewWidth, viewHeight);
     }
 
 
@@ -95,6 +99,7 @@ public class fadeRenderer implements GLSurfaceView.Renderer {
 
     public void moveCamera(float dx, float dy){
         camera.move(dy, dx, 0);
+        crosshair.fireAndMove(fMVPMatrix);
     }
     /*public void moveCamera2(float dx, float dy){
         camera2.move(dy, 0, -dx);
@@ -105,13 +110,10 @@ public class fadeRenderer implements GLSurfaceView.Renderer {
         touch = false;
     }
 
-    public void onHold(){
-        crosshair.fire(fMVPMatrix, 0f, 0f, (float)viewWidth, (float)viewHeight);
-    }
     public void onTouch(float x, float y){
         Log.d("Fade-fadeRenderer-touch-xy ", "x:" + Float.toString(x) + " y: " + Float.toString(y));
-        crosshair.moveTo(x, y);
-        crosshair.fire(fMVPMatrix, 0f, 0f, (float)viewWidth, (float)viewHeight);
+        crosshair.moveTo(x, (float)viewHeight - y);
+        crosshair.fire(fMVPMatrix);
         touch = true;
     }
 }

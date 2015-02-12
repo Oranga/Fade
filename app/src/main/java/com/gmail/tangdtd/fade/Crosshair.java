@@ -14,14 +14,14 @@ import java.nio.ShortBuffer;
  */
 public class Crosshair {
     private final static String vertexShader =
-            "uniform mat4 uMVPMatrix;" +
+                    "uniform mat4 uMVPMatrix;" +
                     "attribute vec4 a_Position;" +
                     "void main() {" +
                     "   gl_Position = uMVPMatrix * a_Position;" +
                     "}";
     private final static String fragmentShader =
-            "precision mediump float;" +
-                    "varying vec4 v_Color;" +
+                    "precision mediump float;" +
+                    "uniform vec4 v_Color;" +
                     "void main () {" +
                     "   gl_FragColor = v_Color;" +
                     "}";
@@ -31,8 +31,9 @@ public class Crosshair {
     private static int crProgramHandle;
     private int crMVPMatrixHandle, crPositionHandle, crColorHandle;
     private final int crStrideBytes = 4*4;
-    private final int ePositionOffset = 0;
+    private final int crPositionOffset = 0;
     private final int crPositionDataSize = 3;
+    private float  viewXMin,  viewYMin,  viewXMax,  viewYMax;
 
 
     private FloatBuffer crVerticesBuffer;
@@ -40,11 +41,15 @@ public class Crosshair {
 
     //private boolean locked;
     public Crosshair(){
-        this(0, 0);
+        this(0, 0, 0, 0, 100, 100);
     }
-    public Crosshair(float x, float y){
+    public Crosshair(float x, float y, float xmin, float ymin, float xmax, float ymax){
         xLoc = x;
         yLoc = y;
+        viewXMin = xmin;
+        viewYMin = ymin;
+        viewXMax = xmax;
+        viewYMax = ymax;
         int vertexShaderHandle = fadeRenderer.loadShader(GLES20.GL_VERTEX_SHADER, vertexShader);
         int fragmentShaderHandle = fadeRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER,fragmentShader);
 
@@ -52,7 +57,7 @@ public class Crosshair {
         GLES20.glAttachShader(crProgramHandle, vertexShaderHandle);
         GLES20.glAttachShader(crProgramHandle, fragmentShaderHandle);
         GLES20.glBindAttribLocation(crProgramHandle, 0, "a_Position");
-        GLES20.glBindAttribLocation(crProgramHandle, 1, "a_Color");
+//        GLES20.glBindAttribLocation(crProgramHandle, 1, "a_Color");
         GLES20.glLinkProgram(crProgramHandle);
 
         crMVPMatrixHandle = GLES20.glGetUniformLocation(crProgramHandle, "uMVPMatrix");
@@ -64,7 +69,13 @@ public class Crosshair {
         xLoc = x;
         yLoc = y;
     }
-    private float[] unproject(float [] mvpMatrix, float xLoc, float yLoc, float zLoc, float viewXMin, float viewYMin, float viewXMax, float viewYMax){
+    public void setViewPort(float xmin, float ymin, float xmax, float ymax){
+        viewXMin = xmin;
+        viewYMin = ymin;
+        viewXMax = xmax;
+        viewYMax = ymax;
+    }
+    private float[] unproject(float [] mvpMatrix, float xLoc, float yLoc, float zLoc){
         float [] crRay = {((xLoc - viewXMin)/(viewXMax - viewXMin)) * 2f - 1f , (2f * (yLoc - viewYMin)/(viewYMax - viewYMin) - 1f), zLoc * 2f -1f, 1f};
         float [] crNewRay = new float[4];
         if ( !Matrix.invertM(crInvertMatrix, 0, mvpMatrix, 0)){
@@ -87,10 +98,9 @@ public class Crosshair {
     public void draw(float [] mvpMatrix){
         if (farLeft != null) {
             crVerticesBuffer = ByteBuffer.allocateDirect((nearLeft.length + nearRight.length + farLeft.length + farRight.length) * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
-            crVerticesBuffer.put(nearRight).put(nearLeft).put(farRight).put(farLeft).position(0);
-
+            crVerticesBuffer.put(nearLeft).put(nearRight).put(farRight).put(farLeft);
             GLES20.glUseProgram(crProgramHandle);
-            crVerticesBuffer.position(ePositionOffset);
+            crVerticesBuffer.position(crPositionOffset);
             GLES20.glVertexAttribPointer(crPositionHandle, crPositionDataSize, GLES20.GL_FLOAT, false, crStrideBytes, crVerticesBuffer);
             GLES20.glEnableVertexAttribArray(crPositionHandle);
 
@@ -98,26 +108,27 @@ public class Crosshair {
             Matrix.setIdentityM(crFinalMatrix, 0);
             GLES20.glUniformMatrix4fv(crMVPMatrixHandle, 1, false, mvpMatrix, 0);
 
-            float[] color = {1f, 1f, 1f, 1f};
+            float[] color = {0f, 0f, 0f, 1f};
             GLES20.glUniform4fv(crColorHandle, 1, color, 0);
-            GLES20.glDisable(GLES20.GL_CULL_FACE);
-            GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 2);
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
             GLES20.glDisableVertexAttribArray(crPositionHandle);
-            GLES20.glEnable(GLES20.GL_CULL_FACE);
         }
     }
-    public void fire(float [] mvpMatrix, float viewXMin, float viewYMin, float viewXMax, float viewYMax){
-        ray1 = unproject(mvpMatrix, xLoc, yLoc, 0f, viewXMin, viewYMin, viewXMax, viewYMax);
-        ray2 = unproject(mvpMatrix, xLoc, yLoc, 1f, viewXMin, viewYMin, viewXMax, viewYMax);
-        nearLeft = unproject(mvpMatrix, xLoc - 5f, yLoc - 1f, 0.1f, viewXMin, viewYMin, viewXMax, viewYMax);
-        Log.d("fade-Crosshair-nearLeft", "(" + Float.toString(nearLeft[0]) + ", " + Float.toString(nearLeft[1]) + ", " + Float.toString(nearLeft[2]) + ")");
-        nearRight = unproject(mvpMatrix, xLoc + 5f, yLoc - 1f, 0.1f, viewXMin, viewYMin, viewXMax, viewYMax);
-        Log.d("fade-Crosshair-nearRight", "(" + Float.toString(nearRight[0]) + ", " + Float.toString(nearRight[1]) + ", " + Float.toString(nearRight[2]) + ")");
-        farLeft = unproject(mvpMatrix, xLoc - 5f, yLoc + 1f, .9f, viewXMin, viewYMin, viewXMax, viewYMax);
-        Log.d("fade-Crosshair-farLeft", "(" + Float.toString(farLeft[0]) + ", " + Float.toString(farLeft[1]) + ", " + Float.toString(farLeft[2]) + ")");
-        farRight = unproject(mvpMatrix, xLoc + 5f, yLoc + 1f, .9f, viewXMin, viewYMin, viewXMax, viewYMax);
-        Log.d("fade-Crosshair-farRight", "(" + Float.toString(farRight[0]) + ", " + Float.toString(farRight[1]) + ", " + Float.toString(farRight[2]) + ")");
-        draw(mvpMatrix);
+    public void fireAndMove(float [] mvpMatrix){
+        nearRight = unproject(mvpMatrix, (viewXMax-viewXMin)/2f + 10f, 1f, 0.125f);
+        nearLeft = unproject(mvpMatrix, (viewXMax-viewXMin)/2f - 10f , 1f, 0.125f);
+    }
+    public void fire(float [] mvpMatrix){
+        ray1 = unproject(mvpMatrix, xLoc, yLoc, 0f);
+        ray2 = unproject(mvpMatrix, xLoc, yLoc, 1f);
+        nearRight = unproject(mvpMatrix, (viewXMax-viewXMin)/2f + 10f, 1f, 0.125f);
+        nearLeft = unproject(mvpMatrix, (viewXMax-viewXMin)/2f - 10f , 1f, 0.125f);
+        farLeft = unproject(mvpMatrix, xLoc - 5f, yLoc, 0.125f);
+        farRight = unproject(mvpMatrix, xLoc + 5f, yLoc, 0.125f);
+//        Log.d("fade-Crosshair-nearLeft", "(" + Float.toString(nearLeft[0]) + ", " + Float.toString(nearLeft[1]) + ", " + Float.toString(nearLeft[2]) + ")");
+//        Log.d("fade-Crosshair-nearRight", "(" + Float.toString(nearRight[0]) + ", " + Float.toString(nearRight[1]) + ", " + Float.toString(nearRight[2]) + ")");
+//        Log.d("fade-Crosshair-farLeft", "(" + Float.toString(farLeft[0]) + ", " + Float.toString(farLeft[1]) + ", " + Float.toString(farLeft[2]) + ")");
+//        Log.d("fade-Crosshair-farRight", "(" + Float.toString(farRight[0]) + ", " + Float.toString(farRight[1]) + ", " + Float.toString(farRight[2]) + ")");
     }
     public float[] getNormalRay(){
         float [] ray;

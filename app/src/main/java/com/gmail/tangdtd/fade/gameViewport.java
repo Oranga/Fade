@@ -10,7 +10,6 @@ import android.util.DisplayMetrics;
  */
 public class gameViewport extends Activity {
     private GLSurfaceView fGLView;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -21,7 +20,6 @@ public class gameViewport extends Activity {
         fGLView = new fadeGLSurfaceView(this, displayMetrics.density, displayMetrics.widthPixels, displayMetrics.heightPixels);
         setContentView(fGLView);
     }
-
     @Override
     protected void onResume() {
         fGLView.onResume();

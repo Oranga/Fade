@@ -167,6 +167,15 @@ public class Enemy {
         newYLoc = y;
         newZLoc = z;
     }
+    public float getX(){
+        return xLoc;
+    }
+    public float getY(){
+        return yLoc;
+    }
+    public float getZ(){
+        return zLoc;
+    }
     public float getRotationAngles(float x, float y){
         if (x == 0 && y == 0){
             return 0f;

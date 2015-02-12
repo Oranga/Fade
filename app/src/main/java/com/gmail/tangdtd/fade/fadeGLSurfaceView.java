@@ -57,7 +57,7 @@ public class fadeGLSurfaceView extends GLSurfaceView {
                 break;
             case MotionEvent.ACTION_DOWN:
 //                if (y > height/2)
-                    fRenderer.onTouch(x, height - y);
+                    fRenderer.onTouch(x, y);
                 //fRenderer.slowCameraTo( (float)(Math.sqrt( (double)(dx * dx + dy * dy) ) * 0.01f) );
                 //requestRender();
                 break;
