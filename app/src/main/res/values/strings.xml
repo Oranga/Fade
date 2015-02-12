@@ -3,6 +3,7 @@
 
     <string name="app_name">Fade</string>
     <string name="title_activity_main_fade">Fade</string>
+    <string name="title_activity_gameViewport">FadeGameViewport</string>
     <string name="hello">Hello, welcome to Fade!</string>
     <string name="action_settings">Settings</string>
 
